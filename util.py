@@ -24,7 +24,10 @@ def correlation(adj):
         for j in range(i+1, n):
             a, b = sym_adj[i, :], sym_adj[j, :]
             ar, br = np.delete(a, [i, j]), np.delete(b, [i, j])
-            indirect[i, j] = linregress(ar, br).rvalue
+            try:
+                indirect[i, j] = linregress(ar, br).rvalue
+            except:
+                indirect[i, j] = 0 # all x values are identical
 
     size = np.count_nonzero(adj)
     x_xp = adj - np.sum(adj) / size

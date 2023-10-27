@@ -21,20 +21,21 @@ styles = {
     }
 }
 
-title1 = "txt/KT/천재교육_고등_확률과통계_1단원"
-title2 = "txt/KT/천재교육_고등_확률과통계_2단원"
+title1 = "data/coffee.txt"
+title2 = "data/obama.txt"
 num_node = 14
 scale = 7
 edge_option = "ss"
 word_option = "TF"
 cut_option = "PFNET"
 r = float("inf")
-KG1 = graph.KnowledgeGraph(title1, num_node, scale, edge_option, word_option, cut_option, r)
-KG2 = graph.KnowledgeGraph(title2, num_node, scale, edge_option, word_option, cut_option, r)
+
+KG1 = graph.KnowledgeGraph(title1, num_node, scale, edge_option, cut_option, r, word_option)
+KG2 = graph.KnowledgeGraph(title2, num_node, scale, edge_option, cut_option, r, word_option)
 
 def get_node_and_edges(KG, common_nodes=None, common_edges=None):
     print("common edges : ", common_edges)
-    print("ddddd : ", KG.cut_G.edges(data=True))
+    print("graph edges : ", KG.cut_G.edges(data=True))
     pos = nx.spring_layout(KG.cut_G)
     nodes = [
         {

@@ -1,46 +1,42 @@
 import load_data as ld
 import numpy as np
 import pandas as pd
-from eunjeon import Mecab
-from konlpy.tag import Komoran
-from soynlp.normalizer import *
 from sklearn.feature_extraction.text import TfidfVectorizer
 #from sklearn.feature_extraction.text import CountVectorizer
-import re   
+import re
 
-stopwords = ['관련', '때', '다음']
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.tag import pos_tag
 
-def mecab_tokenize(sent):
-    mecab = Mecab("C:\mecab\mecab-ko-dic") 
-    # 여기서 mecab 경로 인식을 못할시 _mecab.py에서 Tagger('--rcfile %s' % dicpath)
-    # 를 Tagger('-d %s' % dicpath) 로 바꾸어 주면 됨
+nltk.download('stopwords')
 
-    words = mecab.pos(sent)
-    words = [w[0] for w in words if ('NNG' in w[1] or 'NNP' in w[1])]
-    # XR : 어근, NNP : 고유명사, NNG : 보통명사, VA : 형용사
+from nltk.corpus import stopwords
+english_stopwords = stopwords.words('english')
+
+def tokenize(sent):
+    words = pos_tag(word_tokenize(sent))
+    words = [w[0].lower() for w in words if ('NNG' in w[1] or 'NNP' in w[1])]
+    # XR: root, NNP: proper noun, NNG: common noun, VA: adjective
     return words
 
 def clean_text(str):
     txt = re.sub('[-=+,#/\?:^@*\"※~ㆍ!』‘|\(\)\[\]`\'…》\”\“\’·]', ' ', str)
-    txt = only_text(txt)
-    txt = repeat_normalize(txt, num_repeats=1)
     return txt
 
 def clean_stopword(tokens):
     clean_tokens = []
     for token in tokens:
-        if token not in stopwords:
+        if token not in english_stopwords:
             clean_tokens.append(token)
     return clean_tokens
 
-def preprocessing(paragraph): # paragraph는 문서 하나
-
+def preprocessing(paragraph):  # paragraph is a single document
     clean_txt = clean_text(paragraph)
-    clean_tokens = mecab_tokenize(clean_txt)
+    clean_tokens = tokenize(clean_txt)
     clean_tokens = clean_stopword(clean_tokens)
 
-    return clean_tokens # [토큰1, 토큰2, 토큰3, ...]
-    
+    return clean_tokens  # [token1, token2, token3, ...]
 
 def stc_preprocessing(listOfstcs):
     return list(map(preprocessing, listOfstcs))
@@ -51,19 +47,15 @@ def para2stcs(paragraph):
 def lst2str(lst):
     return ' '.join(lst)
 
-
-def preprocess_node(paragraphs):  # paragraphs : ["문서1", "문서2", ...]
-    
+def preprocess_node(paragraphs):  # paragraphs: ["document1", "document2", ...]
     tokens_of_paras = list(map(preprocessing, paragraphs))
-    return tokens_of_paras  # [ [문서1의 단어들], [문서2의 단어들], ... ]
+    return tokens_of_paras  # [[words of document1], [words of document2], ...]
 
-def preprocess_edge(paragraphs):  # paragraphs : ["문서1", "문서2", ...]
-    
-    listOfsentences = list(map(para2stcs, paragraphs))      # [ [문서1의 문장1, 문서1의 문장2, ...], [문서2의 문장1, ...] , ...]
+def preprocess_edge(paragraphs):  # paragraphs: ["document1", "document2", ...]
+    listOfsentences = list(map(para2stcs, paragraphs))      # [[sentence1 of document1, sentence2 of document1, ...], [sentence1 of document2, ...] , ...]
     clean_stc_tokens = list(map(stc_preprocessing, listOfsentences))
 
     return clean_stc_tokens
-
 
 def make_dic_tfidf(list_of_wordlist):
     total_word_counts = dict()
@@ -71,19 +63,16 @@ def make_dic_tfidf(list_of_wordlist):
     for word_list in list_of_wordlist:
         word_counts = dict()
         for word in word_list:
-            #if word_counts.get(word, 0) == 0:
-            #    word_frequency[word] = word_frequency.get(word, 0) + 1
-            word_counts[word] = word_counts.get(word, 0) + 1    # 단어의 카운트 증가
+            word_counts[word] = word_counts.get(word, 0) + 1    # Increase the word count
         
         for item in word_counts.items():
             total_word_counts[item[0]] = total_word_counts.get(item[0], 0) + item[1]
 
-    # tfidf 계산 안하고 tf만 계산함. tfidf는 주석처리됨
+    # Not calculating tfidf, only tf. tfidf is commented out.
     tfidfs = []
     for item in word_frequency.items():
-        #idf = np.log(len(list_of_wordlist) / (1 + item[1]))
         tf = total_word_counts[item[0]]
-        tfidfs.append(tf) #* idf)
+        tfidfs.append(tf)
 
     tfidfs = np.array(tfidfs) 
     tfidfs = tfidfs / np.linalg.norm(tfidfs)
@@ -95,10 +84,9 @@ def make_dic_tfidf(list_of_wordlist):
 def make_dic_count(paragraphs):
     word_counts = dict()
     for word in paragraphs:
-        word_counts[word] = word_counts.get(word, 0) + 1    # 단어의 카운트 증가
+        word_counts[word] = word_counts.get(word, 0) + 1    # Increase the word count
 
     return word_counts
-
 
 def stcs_dic_count(ListOfSentence):
     return list(map(make_dic_count, ListOfSentence))

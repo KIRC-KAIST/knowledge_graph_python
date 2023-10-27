@@ -11,13 +11,12 @@ from textrank import KeywordSummarizer
 
 class KnowledgeGraph:
     
-    def __init__(self, title, n_node, scale, edge_option, word_option, cut_option, r):
+    def __init__(self, title, n_node, scale, edge_option, cut_option, r, word_option="TextRank"):
         self.e_option = edge_option
         self.w_option = word_option
         self.scale = scale
         self.n_node = n_node
-        self.paras = ld.read_txt(title + ".txt")
-        
+        self.paras = ld.read_txt(title)        
         self.nodes = self.get_nodes()
         self.edges = self.get_adj()
         self.G = self.make_graph(self.nodes, self.edges)
@@ -25,33 +24,41 @@ class KnowledgeGraph:
         self.r = util.correlation(self.edges)
             
     def get_nodes(self):
+        print(f"Extracting {self.n_node} keywords...")
+        print(f"Using {self.w_option}...")
         if self.w_option == "TF":
             tokens_paras = pre.preprocess_node(self.paras)
+            print(tokens_paras)
             tokens_tfidf = pre.make_dic_tfidf(tokens_paras)
-            return util.get_top_N(tokens_tfidf, self.n_node) 
+            keywords = util.get_top_N(tokens_tfidf, self.n_node) 
         elif self.w_option =="TextRank":
             keyword_extractor = KeywordSummarizer(
-                tokenize = pre.mecab_tokenize,
+                tokenize = pre.tokenize,
                 window = -1,
                 verbose = False
             )
             dic_comb = []
             sents = ". ".join(self.paras).split(". ")  
-            # stopword가 포함되어 있을 수 있으므로 n_node의 2배만큼 넉넉히 받음
+            # Receive twice as many as n_node because it may contain a stopword
             keywords = keyword_extractor.summarize(sents, topk=2 * self.n_node) 
-
-
-            # stopword 제거하는 과정
+            print(keywords)
+            # Remove stopwords
             count_node = 0
             for word, rank in keywords:
-                # n_node만큼 구하면 멈추고 return
                 if count_node == self.n_node:
                     break
-                if word not in pre.stopwords:
+                if word not in pre.english_stopwords:
                     dic_comb.append((word, round(rank, 2)))
                     count_node += 1
-            return dic_comb
-                
+            keywords = dic_comb
+        else:
+            raise NotImplementedError("Choose word option among ('TF', 'TextRank')")
+        print("Extracted keywords")
+        print(len(keywords))
+        print(keywords)
+        return keywords
+
+
     def get_adj(self):
         tokens_paras, tokens_stcs = pre.preprocess_node(self.paras), pre.preprocess_edge(self.paras) 
         dic_paras = list(map(pre.make_dic_count, tokens_paras))
