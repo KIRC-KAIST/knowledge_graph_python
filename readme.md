@@ -15,7 +15,7 @@
 ## preprocess.py
 - **Functions**:
   - `stopwords`: Add desired stopwords for removal. Used in `clean_stopwords`.
-  - `mecab_tokenize(sent)`: Uses the `mecab` tokenizer for Korean.
+  - `tokenize(sent)`: split a sentence into tokens.
   - `clean_txt(str)`: Removes special characters from a string.
   - `clean_stopword(tokens)`: Removes stopwords from tokenized words.
   - `preprocessing(paragraph)`: Comprehensive preprocessing function.
